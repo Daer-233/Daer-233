@@ -16,7 +16,7 @@ Building evidence-backed knowledge assistants and automation tools for design wo
   <img alt="贪吃蛇吃掉我的 GitHub 贡献格子" src="./assets/github-snake.svg" width="100%" />
 </picture>
 
-<sub>绿色：真实贡献，位置固定，每轮只吃一部分 · 蓝 / 橙 / 粉：装饰方块，每轮换位，不计进度</sub>
+<sub>绿色：真实贡献，位置固定，每轮逐步吃完 · 蓝 / 橙 / 粉：装饰方块，每轮换位，不计进度</sub>
 
 ## GitHub 数据
 

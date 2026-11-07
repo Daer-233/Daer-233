@@ -11,7 +11,7 @@ function calendar(points) {
 const key = point => `${point.x},${point.y}`;
 
 for (const points of [[], [{ x: 52, y: 3 }], [2, 3, 4, 5].map(y => ({ x: 52, y })), [{ x: 0, y: 0 }, { x: 52, y: 0 }, { x: 0, y: 6 }, { x: 52, y: 6 }, { x: 26, y: 3 }]]) {
-  test(`bounded movement, partial contributions and randomized resets: ${points.length} green cells`, () => {
+  test(`bounded movement, complete contributions and randomized resets: ${points.length} green cells`, () => {
     const model = buildRounds(calendar(points), { seed: 42 });
     const green = new Set(points.map(key));
     assert.equal(model.rounds.length, 12);
@@ -20,9 +20,8 @@ for (const points of [[], [{ x: 52, y: 3 }], [2, 3, 4, 5].map(y => ({ x: 52, y }
     for (const round of model.rounds) {
       const greenEats = round.eats.filter(event => event.kind === 'contribution');
       const foodEats = round.eats.filter(event => event.kind === 'decoration');
-      assert.ok(greenEats.length <= round.greenCap);
-      assert.ok(!green.size || greenEats.length < green.size, 'A round must leave some contribution cells uneaten');
-      if (green.size > 1) assert.ok(greenEats.length > 0, 'A round must also eat real contributions');
+      assert.equal(greenEats.length, green.size, 'Every contribution cell must be eaten');
+      for (let i = 1; i < greenEats.length; i++) assert.ok(round.eats.some(event => event.kind === 'decoration' && event.step > greenEats[i - 1].step && event.step < greenEats[i].step), 'Green cells should be separated by decorative food');
       assert.equal(foodEats.length, round.food.length, 'All visible decoration food must be eaten before reset');
       assert.ok(round.food.length >= 20);
       assert.equal(new Set(round.eats.map(key)).size, round.eats.length, 'Food may only be credited once per round');
@@ -58,7 +57,7 @@ for (const points of [[], [{ x: 52, y: 3 }], [2, 3, 4, 5].map(y => ({ x: 52, y }
         const values = bar[1].match(/values="([^"]+)"/)[1].split(';').map(Number);
         const greenEats = model.rounds[index].eats.filter(event => event.kind === 'contribution').length;
         assert.equal(values.length - 1, greenEats, 'Only green food events advance the progress bar');
-        assert.ok(values.every(value => Number.isFinite(value) && value >= 0 && value < model.width * 16));
+        assert.ok(values.every(value => Number.isFinite(value) && value >= 0 && value <= model.width * 16));
       });
       for (const match of svg.matchAll(/keyTimes="([^"]+)"/g)) {
         const times = match[1].split(';').map(Number);

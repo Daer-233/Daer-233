@@ -66,10 +66,7 @@ export function buildRounds(calendar, { seed = randomBytes(4).readUInt32LE(), ro
   let attempts = 0;
   for (let roundIndex = 0; roundIndex < roundCount; roundIndex++) {
     if (++attempts > roundCount * 100) throw new Error('Unable to generate enough playable rounds');
-    const cap = contributions.length > 1 ? Math.min(1 + roundIndex % 3, Math.floor(contributions.length / 2)) : 0;
-    const selected = shuffle(contributions, rng).slice(0, cap);
-    const selectedKeys = new Set(selected.map(key));
-    const blocked = new Set(contributions.filter(cell => !selectedKeys.has(key(cell))).map(key));
+    const selected = shuffle(contributions, rng);
     let body;
     for (const start of shuffle(empty, rng)) {
       const candidate = Array.from({ length: 4 }, (_, offset) => ({ x: start.x - offset, y: start.y }));
@@ -83,18 +80,18 @@ export function buildRounds(calendar, { seed = randomBytes(4).readUInt32LE(), ro
     const pendingGreen = new Map(selected.map(cell => [key(cell), cell]));
     const frames = [body.map(cell => ({ ...cell }))];
     const eats = [];
+    let foodSinceGreen = 0;
     while (pendingFood.size || pendingGreen.size) {
-      // A green cell can be a dead end between reserved contributions. Finish
-      // decoration food first so reaching such a cell safely ends the round.
-      const seekGreen = pendingGreen.size && !pendingFood.size;
+      const seekGreen = pendingGreen.size > 0 && (foodSinceGreen >= 3 || pendingFood.size === 0);
       const targets = [...(seekGreen ? pendingGreen : pendingFood).values()].sort((a, b) => distance(body[0], a) - distance(body[0], b));
       let path = null;
       for (const target of targets) {
-        path = findPath(body, target, blocked, width, height, Boolean(seekGreen));
+        const blocked = new Set(pendingGreen.keys());
+        if (seekGreen) blocked.delete(key(target));
+        path = findPath(body, target, blocked, width, height, Boolean(seekGreen && pendingGreen.size === 1 && pendingFood.size === 0));
         if (path) break;
-        (seekGreen ? pendingGreen : pendingFood).delete(key(target));
       }
-      if (!path) continue;
+      if (!path) break;
       for (const point of path) {
         body = [point, ...body.slice(0, -1)];
         frames.push(body.map(cell => ({ ...cell })));
@@ -102,20 +99,24 @@ export function buildRounds(calendar, { seed = randomBytes(4).readUInt32LE(), ro
         if (pendingFood.has(id)) {
           eats.push({ ...pendingFood.get(id), kind: 'decoration', step: frames.length - 1 });
           pendingFood.delete(id);
+          foodSinceGreen++;
         }
         if (pendingGreen.has(id)) {
           eats.push({ ...pendingGreen.get(id), kind: 'contribution', step: frames.length - 1 });
           pendingGreen.delete(id);
+          foodSinceGreen = 0;
         }
       }
     }
     // Only show reachable food. Every displayed decoration is eaten before reset.
     const eatenFood = new Set(eats.filter(event => event.kind === 'decoration').map(key));
-    if ((cap && !eats.some(event => event.kind === 'contribution')) || eatenFood.size < Math.min(20, food.length)) {
+    const greenEats = eats.filter(event => event.kind === 'contribution');
+    const separated = food.length < greenEats.length - 1 || greenEats.every((event, index) => index === 0 || eats.some(foodEvent => foodEvent.kind === 'decoration' && foodEvent.step > greenEats[index - 1].step && foodEvent.step < event.step));
+    if (pendingGreen.size || pendingFood.size || !separated || eatenFood.size < Math.min(20, food.length)) {
       roundIndex--;
       continue;
     }
-    rounds.push({ frames, food: food.filter(cell => eatenFood.has(key(cell))), eats, greenCap: cap });
+    rounds.push({ frames, food: food.filter(cell => eatenFood.has(key(cell))), eats });
   }
   return { width, height, contributions, rounds, seed };
 }
@@ -136,7 +137,7 @@ export function renderSnake(model, dark) {
   const duration = durations.reduce((sum, value) => sum + value, 0);
   const green = new Map(model.contributions.map(cell => [key(cell), cell]));
   const rectangle = (cell, fill, extra = '', children = '') => `<rect x="${cell.x * cellSize + 2}" y="${cell.y * cellSize + 2}" width="12" height="12" rx="2" fill="${fill}" ${extra}>${children}</rect>`;
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${boardWidth + 16}" height="160" viewBox="-8 -8 ${boardWidth + 16} 160" data-round-count="${model.rounds.length}" data-seed="${model.seed}" role="img" aria-labelledby="title desc"><title id="title">Contribution snake</title><desc id="desc">Each round eats only part of the fixed green contribution cells. Decorative food is randomized for each pre-generated round and gives no progress. The snake stays inside the board. Rounds repeat until the next daily generation.</desc><defs><clipPath id="board"><rect width="${boardWidth}" height="${boardHeight}"/></clipPath></defs>`;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${boardWidth + 16}" height="160" viewBox="-8 -8 ${boardWidth + 16} 160" data-round-count="${model.rounds.length}" data-seed="${model.seed}" role="img" aria-labelledby="title desc"><title id="title">Contribution snake</title><desc id="desc">Each round eats all green contribution cells gradually, interspersed with randomized decorative food that gives no progress. The snake stays inside the board. Rounds repeat until the next daily generation.</desc><defs><clipPath id="board"><rect width="${boardWidth}" height="${boardHeight}"/></clipPath></defs>`;
   svg += `<g data-kind="fixed-grid" stroke="${border}" stroke-width="0.5">`;
   for (let x = 0; x < model.width; x++) for (let y = 0; y < model.height; y++) {
     const cell = green.get(`${x},${y}`);
