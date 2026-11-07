@@ -1,0 +1,52 @@
+name: Update profile visuals
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/profile.yml'
+      - '.github/scripts/generate-stats.mjs'
+  schedule:
+    - cron: '18 23 * * *' # Daily at 07:18 Asia/Shanghai
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: profile-visuals
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out profile
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Generate account statistics
+        run: node .github/scripts/generate-stats.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROFILE_USER: ${{ github.repository_owner }}
+      - name: Generate contribution snake
+        uses: Platane/snk/svg-only@d8f6715049803e982ee5ff501b6b9b7d5deeb09b # v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            assets/github-snake.svg
+            assets/github-snake-dark.svg?palette=github-dark
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish generated visuals
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/github-stats.svg assets/github-stats-dark.svg assets/github-snake.svg assets/github-snake-dark.svg
+          if git diff --cached --quiet; then
+            echo 'Profile visuals are already up to date.'
+            exit 0
+          fi
+          git commit -m 'chore: refresh profile visuals'
+          git pull --rebase origin main
+          git push origin HEAD:main
