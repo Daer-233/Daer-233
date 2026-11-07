@@ -6,8 +6,7 @@ on:
     paths:
       - '.github/workflows/profile.yml'
       - '.github/scripts/generate-stats.mjs'
-      - '.github/scripts/generate-snake.mjs'
-      - '.github/scripts/generate-snake.test.mjs'
+      - '.github/scripts/decorate-snake.mjs'
   schedule:
     - cron: '18 23 * * *' # Daily at 07:18 Asia/Shanghai
   workflow_dispatch:
@@ -32,12 +31,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PROFILE_USER: ${{ github.repository_owner }}
       - name: Generate contribution snake
-        run: node --test .github/scripts/generate-snake.test.mjs
-      - name: Render contribution snake
-        run: node .github/scripts/generate-snake.mjs
+        uses: Platane/snk/svg-only@d8f6715049803e982ee5ff501b6b9b7d5deeb09b # v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            assets/github-snake.svg
+            assets/github-snake-dark.svg?palette=github-dark
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PROFILE_USER: ${{ github.repository_owner }}
+      - name: Add changing decorative food
+        run: node .github/scripts/decorate-snake.mjs assets/github-snake.svg assets/github-snake-dark.svg
       - name: Publish generated visuals
         run: |
           git config user.name 'github-actions[bot]'
