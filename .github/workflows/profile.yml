@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/profile.yml'
       - '.github/scripts/generate-stats.mjs'
+      - '.github/scripts/decorate-snake.mjs'
   schedule:
     - cron: '18 23 * * *' # Daily at 07:18 Asia/Shanghai
   workflow_dispatch:
@@ -38,6 +39,8 @@ jobs:
             assets/github-snake-dark.svg?palette=github-dark
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Add decorative food without contribution credit
+        run: node .github/scripts/decorate-snake.mjs assets/github-snake.svg assets/github-snake-dark.svg
       - name: Publish generated visuals
         run: |
           git config user.name 'github-actions[bot]'
