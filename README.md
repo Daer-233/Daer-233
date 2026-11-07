@@ -1,8 +1,28 @@
-# Daer-233
+# Hi there, I'm Daer-233 👋
 
 AI 应用工程 · 企业知识助手、RAG 与设计工作流自动化
 
 Building evidence-backed knowledge assistants and automation tools for design workflows.
+
+<p>
+  <a href="https://github.com/Daer-233/WorkRAG"><img alt="WorkRAG" src="https://img.shields.io/badge/WorkRAG-Knowledge_Assistant-0969da?style=flat-square" /></a>
+  <a href="https://github.com/Daer-233/design-rag"><img alt="Design RAG" src="https://img.shields.io/badge/Design-RAG-238636?style=flat-square" /></a>
+  <img alt="Profile views" src="https://komarev.com/ghpvc/?username=Daer-233&amp;label=Profile%20views&amp;color=0969da&amp;style=flat-square" />
+</p>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/github-snake-dark.svg" />
+  <source media="(prefers-color-scheme: light)" srcset="./assets/github-snake.svg" />
+  <img alt="贪吃蛇吃掉我的 GitHub 贡献格子" src="./assets/github-snake.svg" width="100%" />
+</picture>
+
+## GitHub 数据
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/github-stats-dark.svg" />
+  <source media="(prefers-color-scheme: light)" srcset="./assets/github-stats.svg" />
+  <img alt="GitHub 活跃数据与公开原创仓库语言占比" src="./assets/github-stats.svg" width="100%" />
+</picture>
 
 ## 精选项目
 
